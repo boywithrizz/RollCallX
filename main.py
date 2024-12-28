@@ -3,7 +3,6 @@ import asyncio
 # Replace with your bot token
 TOKEN = '7551528861:AAEpxbtxw9cOhBbE0-ldqU2u8RowHflK9ZE'
 bot = AsyncTeleBot(TOKEN)
-
 @bot.message_handler(commands=['start','help'])
 async def info(message):
     user = message.from_user
