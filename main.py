@@ -1,18 +1,26 @@
-import telebot
+#!/usr/bin/python
 
-# Replace with your actual token
-bot = telebot.TeleBot("7551528861:AAEpxbtxw9cOhBbE0-ldqU2u8RowHflK9ZE")
-click = 0 
+# This is a simple echo bot using the decorator mechanism.
+# It echoes any incoming text messages.
+import asyncio
 
+from telebot.async_telebot import AsyncTeleBot
+
+bot = AsyncTeleBot('7551528861:AAEpxbtxw9cOhBbE0-ldqU2u8RowHflK9ZE')
+
+
+# Handle '/start' and '/help'
+@bot.message_handler(commands=['help', 'start'])
+async def send_welcome(message):
+    user = message.from_user
+    text = f'Hi {user.first_name}, I am EchoBot.\nJust write me something and I will repeat it!'
+    await bot.reply_to(message, text)
+
+
+# Handle all other messages with content_type 'text' (content_types defaults to ['text'])
 @bot.message_handler(func=lambda message: True)
-def echo_all(message):
-    first_name = message.from_user.first_name
-    last_name = message.from_user.last_name
-    chat_id = message.chat.id
-    text = message.text
-    click+=1
+async def echo_message(message):
+    await bot.reply_to(message, message.text)
 
-    response = f"Hello {first_name} {last_name},\nWelcome to the LPowerBot\n It is your message number : {click}!"
-    bot.reply_to(message, response)
 
-bot.polling()
+asyncio.run(bot.polling())
