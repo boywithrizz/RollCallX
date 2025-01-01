@@ -16,7 +16,7 @@ class Universal:
         (self.exclusions).extend(f_exclusions_r(exclusions_r))
         self.remaining_leaves = 0
 
-class subject:
+class Subject:
     def __init__(self,name,universal,wlist):
         self.name = name
         self.weeklist = f_weeklist(wlist)
@@ -41,14 +41,13 @@ class subject:
         self.mt2leaves = floor(0.25*self.mt2classes)
         self.mt3leaves = floor(0.25*self.mt3classes)
 
-class user():
-    def __init__ (self,userid,listsub):
+class User():
+    def __init__ (self,userid,dict_wlist):
         self.userid = userid
-        self.listsub = listsub
-        wlist = ["01-01-25","02-01-25","04-01-25"]
-        self.math = subject("math",universal,wlist)
-        self.english = subject("english",universal,wlist)
-        self.sub_list = {"math" : self.math, "english" : self.english}
+        self.dict_wlist = dict_wlist
+        self.subdict = {}
+        for i in dict_wlist:
+            self.subdict[f'{i}'] = Subject(i,universal,dict_wlist[i])
         
             
             
@@ -120,10 +119,12 @@ def main(sub):
             att = int(input(f'Today is {sub.name} period mark attendance 0 or 1 :'))
             if att==1:
                 sub.class_a += 1
+                sub.class_h += 1
             else:
                 sub.class_l += 1
+                sub.class_h += 1
         else :
-            print("No maths period today!")
+            print(f'No {sub.name} period today!')
         sub.remaining_leaves = total_leaves - sub.class_l
         itemlist = {"remaining_leaves" : sub.remaining_leaves, "class_a" : sub.class_a, "class_l" : sub.class_l}
         print(itemlist)
@@ -134,28 +135,34 @@ def main(sub):
             today = date(input("Enter the next date :"))
         print("\n\n")
 
-def initial():
-    exclusions_l = ["26-01-25","26-02-25"]
-    exclusions_r = ["09-03-25","19-03-25"]
-    global universal
-    universal = Universal("01-01-25", "12-03-25", "17-03-25", "12-04-25", "17-04-25", "12-05-25",exclusions_l,exclusions_r)
-    global user1
-    user1 = user(1,['math','english','hindi'])
+def initial(userid):
+    keys = userdict.keys
+    if userid not in userdict:
+        dict1 = {
+    "math" : ["01-01-25","03-01-25","05-01-25"],
+    "english" : ["02-01-25","04-01-25","06-01-25"]
+    }
+    userdict.setdefault(userid,User(1,dict1))
+    return userdict[userid]
+
 
 def continous(user):
-    math = user.math
-    english = user.english
-    list = [math,english]
-    for i in list:
-        main(i)
+    for i in user.subdict:
+        main(user.subdict[i])
 
 def show(user1,str):
-    sub = user1.sub_list[str]
+    sub = user1.subdict[str]
     print(vars(sub))
-    
 
-initial()
-continous(user1)
-show(user1,"english")
+exclusions_l = ["26-01-25","26-02-25"]
+exclusions_r = ["09-03-25","19-03-25"]
+global universal
+universal = Universal("01-01-25", "12-03-25", "17-03-25", "12-04-25", "17-04-25", "12-05-25",exclusions_l,exclusions_r)
 
+if __name__ == "__main__":
+    userdict = {}
+    userid = 1
+    current_user = initial(userid)
+    continous(current_user)
+    show(current_user,"english")
 
