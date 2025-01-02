@@ -3,6 +3,10 @@ from hmac import new
 from math import floor
 import math
 import arrow
+from dotenv import load_dotenv
+import asyncio
+from telebot.async_telebot import AsyncTeleBot
+import os
 
 class Universal:
     def __init__(self, semstartdate, mt1date, mt1edate, mt2date, mt2edate, mt3date,exclusions_l,exclusions_r):
@@ -47,9 +51,7 @@ class User():
         self.dict_wlist = dict_wlist
         self.subdict = {}
         for i in dict_wlist:
-            self.subdict[f'{i}'] = Subject(i,universal,dict_wlist[i])
-        
-            
+            self.subdict[f'{i}'] = Subject(i,universal,dict_wlist[i])    
             
 def date(strdate):
     ourdate = arrow.get(strdate, "DD-MM-YY")
@@ -78,7 +80,6 @@ def numdate_multi(semstartdate, mt3date, weeklist):
         totaldays.extend(num_date(semstartdate, mt3date, i))
     return totaldays
 
-# 18-03-25 from 20-03-25 to 29-03-25
 def f_exclusions_r(list):
     exclusions = []
     for i in range(0,len(list),2):
@@ -145,7 +146,6 @@ def initial(userid):
     userdict.setdefault(userid,User(1,dict1))
     return userdict[userid]
 
-
 def continous(user):
     for i in user.subdict:
         main(user.subdict[i])
@@ -156,13 +156,26 @@ def show(user1,str):
 
 exclusions_l = ["26-01-25","26-02-25"]
 exclusions_r = ["09-03-25","19-03-25"]
+userdict = {}
 global universal
 universal = Universal("01-01-25", "12-03-25", "17-03-25", "12-04-25", "17-04-25", "12-05-25",exclusions_l,exclusions_r)
+load_dotenv()
+token = os.getenv("TELEGRAM_BOT_TOKEN")
+bot = AsyncTeleBot(token)
 
-if __name__ == "__main__":
-    userdict = {}
-    userid = 1
-    current_user = initial(userid)
-    continous(current_user)
-    show(current_user,"english")
+@bot.message_handler(commands=['start'])
+async def bot_start(message):
+    from_user = message.from_user
+    reply = f'Hello {from_user.first_name} {from_user.last_name}\n Welcome to the attendance tracker bot !'
+    await bot.reply_to(message,reply)
+    id = from_user.id
+    if id not in userdict:
+        await bot.reply_to(message,f'You are not registered kindly register using /register, Thanks')
+    await bot.reply_to(message,f'You can always see help using /help.')
 
+@bot.message_handler(commands=['help'])
+async def bot_help(message):
+    reply = f'Type /start to start the bot. \nType /help for help \nType /register to register yourself on the bot'
+    await bot.reply_to(message,reply)
+
+asyncio.run(bot.polling())
