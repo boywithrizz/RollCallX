@@ -151,7 +151,7 @@ def continous(user):
         main(user.subdict[i])
 
 def today_subject(sub):
-    today = date(datetime.date.today())
+    today = date("03-01-25")
     if today in sub.new_totaldays:
         return sub.name
     else:
@@ -209,8 +209,8 @@ async def bot_markattendance(message):
     for i in subdict:
         subname = today_subject(subdict[i])
         if subname != 0 :
-            list.append(subname)
-    substr = ",".join(list)
+            session_list.append(subname)
+    substr = ",".join(session_list)
     reply = f'Mark the attendance for the following subjects\n{substr}'
     userdict[message.from_user.id].session_list  = session_list
     await bot.reply_to(message,reply)
@@ -225,20 +225,28 @@ async def bot_mark(message):
     #session_list = ["math", "hndi"]
     #mark_list = ["P","A"]
     att_dict = {}
-    for i in range[0,len(mark_list)]:
+    for i in range(0,len(mark_list)):
         att_dict[session_list[i]] = mark_list[i]
     #att_dict = {"math" : "P" , "hindi" : "A"}
     for i in att_dict:
         sub = userdict[message.from_user.id].subdict[i]
+        print(att_dict)
         if att_dict[i] == "P" :
             sub.class_a += 1 
             sub.class_h += 1
         else :
             sub.class_l += 1
             sub.class_h += 1
+        await bot.reply_to(message,f'Attendanced marked for today successfully !')
+        print(f'Subject is {sub.name} class_a = {sub.class_a} class_l = {sub.class_l} class_h = {sub.class_h}')
     
-
-
-
+@bot.message_handler(commands = ['showattendance'])
+async def bot_showattendance(message):
+    user = userdict[message.from_user.id]
+    subdict = user.subdict
+    for i in subdict:
+        sub = subdict[i]
+        reply = f'Subject : {sub.name}\nTotal classes happened : {sub.class_h}\nTotal classes attended : {sub.class_a}\nTotal leaves taken : {sub.class_l}\n Leaves till MT1,MT2,ET are : {sub.mt1leaves} {sub.mt2leaves} {sub.mt2leaves}'
+        await bot.reply_to(message,reply)
 
 asyncio.run(bot.polling())
