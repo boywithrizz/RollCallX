@@ -1,12 +1,17 @@
 from code import interact
+import datetime
 from hmac import new
 from math import floor
 import math
+from multiprocessing import Value
 import arrow
 from dotenv import load_dotenv
 import asyncio
 from telebot.async_telebot import AsyncTeleBot
 import os
+import json
+
+
 
 class Universal:
     def __init__(self, semstartdate, mt1date, mt1edate, mt2date, mt2edate, mt3date,exclusions_l,exclusions_r):
@@ -30,7 +35,7 @@ class Subject:
         self.total_leaves = floor(0.25*len(self.new_totaldays))
         self.class_a = 0
         self.class_l = 0
-        self.class_h = self.class_a + self.class_l
+        self.class_h = 0
         self.mt1classes = 0
         self.mt2classes = 0
         self.mt3classes = 0
@@ -47,6 +52,7 @@ class Subject:
 
 class User():
     def __init__ (self,userid,dict_wlist):
+        self.session_list = []
         self.userid = userid
         self.dict_wlist = dict_wlist
         self.subdict = {}
@@ -136,19 +142,20 @@ def main(sub):
             today = date(input("Enter the next date :"))
         print("\n\n")
 
-def initial(userid):
-    keys = userdict.keys
-    if userid not in userdict:
-        dict1 = {
-    "math" : ["01-01-25","03-01-25","05-01-25"],
-    "english" : ["02-01-25","04-01-25","06-01-25"]
-    }
+def initial(userid,dict1):
     userdict.setdefault(userid,User(1,dict1))
-    return userdict[userid]
+    # return userdict[userid]
 
 def continous(user):
     for i in user.subdict:
         main(user.subdict[i])
+
+def today_subject(sub):
+    today = date(datetime.date.today())
+    if today in sub.new_totaldays:
+        return sub.name
+    else:
+        return 0
 
 def show(user1,str):
     sub = user1.subdict[str]
@@ -177,5 +184,61 @@ async def bot_start(message):
 async def bot_help(message):
     reply = f'Type /start to start the bot. \nType /help for help \nType /register to register yourself on the bot'
     await bot.reply_to(message,reply)
+
+@bot.message_handler(commands=['register'])
+async def bot_register(message):
+    text = message.text
+    dict_text = ((text.strip()).split("#")[1]).strip()
+
+    # # JSON-compatible string representation of a dictionary
+    # dict_string = '{"key1": "value1", "key2": "value2"}'
+
+    # Convert to a dictionary
+    try:
+        result_dict = json.loads(dict_text)
+        print(result_dict)
+    except json.JSONDecodeError:
+        print("Invalid JSON format!")
+    print(type(result_dict))
+    initial(message.from_user.id,result_dict)
+
+@bot.message_handler(commands=['markattendance'])
+async def bot_markattendance(message):
+    subdict = userdict[message.from_user.id].subdict
+    session_list = []
+    for i in subdict:
+        subname = today_subject(subdict[i])
+        if subname != 0 :
+            list.append(subname)
+    substr = ",".join(list)
+    reply = f'Mark the attendance for the following subjects\n{substr}'
+    userdict[message.from_user.id].session_list  = session_list
+    await bot.reply_to(message,reply)
+
+@bot.message_handler(commands= ['mark'])
+async def bot_mark(message):
+    mark_text = message.text.split('#')[1].strip()
+    mark_list = mark_text.split(',')
+    for i in mark_list:
+        i.strip()
+    session_list = userdict[message.from_user.id].session_list
+    #session_list = ["math", "hndi"]
+    #mark_list = ["P","A"]
+    att_dict = {}
+    for i in range[0,len(mark_list)]:
+        att_dict[session_list[i]] = mark_list[i]
+    #att_dict = {"math" : "P" , "hindi" : "A"}
+    for i in att_dict:
+        sub = userdict[message.from_user.id].subdict[i]
+        if att_dict[i] == "P" :
+            sub.class_a += 1 
+            sub.class_h += 1
+        else :
+            sub.class_l += 1
+            sub.class_h += 1
+    
+
+
+
 
 asyncio.run(bot.polling())
