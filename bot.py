@@ -4,6 +4,7 @@ from hmac import new
 from math import floor
 import math
 from multiprocessing import Value
+from annotated_types import UpperCase
 import arrow
 from dotenv import load_dotenv
 import asyncio
@@ -56,6 +57,7 @@ class User():
         self.userid = userid
         self.dict_wlist = dict_wlist
         self.subdict = {}
+        self.section = 0
         for i in dict_wlist:
             self.subdict[f'{i}'] = Subject(i,universal,dict_wlist[i])    
             
@@ -161,11 +163,11 @@ def show(user1,str):
     sub = user1.subdict[str]
     print(vars(sub))
 
-exclusions_l = ["26-01-25","26-02-25"]
-exclusions_r = ["09-03-25","19-03-25"]
+exclusions_l = ["26-02-25","31-03-25","10-04-25","18-04-25",]
+exclusions_r = ["08-03-25","16-03-25",]
 userdict = {}
 global universal
-universal = Universal("01-01-25", "12-03-25", "17-03-25", "12-04-25", "17-04-25", "12-05-25",exclusions_l,exclusions_r)
+universal = Universal("02-01-25","06-02-25","08-02-25","27-03-25","29-03-25","02-05-25",exclusions_l,exclusions_r)
 load_dotenv()
 token = os.getenv("TELEGRAM_BOT_TOKEN")
 bot = AsyncTeleBot(token)
@@ -182,7 +184,27 @@ async def bot_start(message):
 
 @bot.message_handler(commands=['help'])
 async def bot_help(message):
-    reply = f'Type /start to start the bot. \nType /help for help \nType /register to register yourself on the bot'
+    reply = '''1.Type /start to start the bot.
+    Type /register to register
+      Example : 
+    /register # 
+    {
+            "MAT" : ["02-01-25","06-01-25","07-01-25","07-01-25"],
+            "PHY" : ["06-01-25","07-01-25","08-01-25"],
+            "SS" : ["06-01-25","08-01-25"],
+            "EEE" : ["03-01-25","06-01-25","08-01-25"],
+            "ED" : ["02-01-25","07-01-25","08-01-25"],
+            "TC" : ["07-01-25","07-01-25"],
+            "PHY-Lab" : ["06-01-25"],
+            "ED-Lab" : ["03-01-25"],
+            "EEE-Lab" : ["02-01-25"],
+            "TC-Lab" : ["06-01-25","03-01-25"],
+            "Sports" : ["07-01-25","08-01-25"]
+        } or /register # pg2
+    Type /markattendace to mark attendance then use /mark to mark
+      Example /markattendance
+      Then /mark # P,P,A where P = Present, A = Absent
+    Type /showattendance to show attendance of all subjects'''
     await bot.reply_to(message,reply)
 
 @bot.message_handler(commands=['register'])
@@ -190,16 +212,13 @@ async def bot_register(message):
     text = message.text
     dict_text = ((text.strip()).split("#")[1]).strip()
 
-    # # JSON-compatible string representation of a dictionary
-    # dict_string = '{"key1": "value1", "key2": "value2"}'
-
-    # Convert to a dictionary
+    if dict_text in ["PG2","pg2"] :
+        print("Under pg2")
+        dict_text = '{"MAT" : ["02-01-25","06-01-25","07-01-25","07-01-25"],"PHY" : ["06-01-25","07-01-25","08-01-25"],"SS" : ["06-01-25","08-01-25"],"EEE" : ["03-01-25","06-01-25","08-01-25"],"ED" : ["02-01-25","07-01-25","08-01-25"],"TC" : ["07-01-25","07-01-25"],"PHY-Lab" : ["06-01-25"],"ED-Lab" : ["03-01-25"],"EEE-Lab" : ["02-01-25"],"TC-Lab" : ["06-01-25","03-01-25"],"Sports" : ["07-01-25","08-01-25"]}'
     try:
         result_dict = json.loads(dict_text)
-        print(result_dict)
     except json.JSONDecodeError:
         print("Invalid JSON format!")
-    print(type(result_dict))
     initial(message.from_user.id,result_dict)
 
 @bot.message_handler(commands=['markattendance'])
