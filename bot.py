@@ -14,6 +14,7 @@ import json
 from pymongo import MongoClient
 
 
+
 class Universal:
     def __init__(self, semstartdate, mt1date, mt1edate, mt2date, mt2edate, mt3date,exclusions_l,exclusions_r):
         self.semstartdate = date(semstartdate)
@@ -180,7 +181,7 @@ if (collection.find_one({'_id' : 15122005}) == None):
     userdict = {}
     collection.insert_one(userdict)
 else :
-    collection.find_one()
+    userdict = collection.find_one()
 
 @bot.message_handler(commands=['start'])
 async def bot_start(message):
