@@ -11,7 +11,7 @@ import asyncio
 from telebot.async_telebot import AsyncTeleBot
 import os
 import json
-
+from pymongo import MongoClient
 
 
 class Universal:
@@ -153,7 +153,8 @@ def continous(user):
         main(user.subdict[i])
 
 def today_subject(sub):
-    today = date("03-01-25")
+    today = date(pdate(arrow.now()))
+    print(today)
     if today in sub.new_totaldays:
         return sub.name
     else:
@@ -171,6 +172,15 @@ universal = Universal("02-01-25","06-02-25","08-02-25","27-03-25","29-03-25","02
 load_dotenv()
 token = os.getenv("TELEGRAM_BOT_TOKEN")
 bot = AsyncTeleBot(token)
+URI = os.getenv('MONGODB_URI')
+client = MongoClient(URI)
+db = client.lpowerbot
+collection = db.lpowerdata
+if (collection.find_one({'_id' : 15122005}) == None):
+    userdict = {}
+    collection.insert_one(userdict)
+else :
+    collection.find_one()
 
 @bot.message_handler(commands=['start'])
 async def bot_start(message):
@@ -187,7 +197,7 @@ async def bot_help(message):
     reply = '''1.Type /start to start the bot.
     Type /register to register
       Example : 
-    /register # 
+    /register & 
     {
             "MAT" : ["02-01-25","06-01-25","07-01-25","07-01-25"],
             "PHY" : ["06-01-25","07-01-25","08-01-25"],
@@ -200,17 +210,17 @@ async def bot_help(message):
             "EEE-Lab" : ["02-01-25"],
             "TC-Lab" : ["06-01-25","03-01-25"],
             "Sports" : ["07-01-25","08-01-25"]
-        } or /register # pg2
+        } or /register & pg2
     Type /markattendace to mark attendance then use /mark to mark
       Example /markattendance
-      Then /mark # P,P,A where P = Present, A = Absent
+      Then /mark & P,P,A where P = Present, A = Absent
     Type /showattendance to show attendance of all subjects'''
     await bot.reply_to(message,reply)
 
 @bot.message_handler(commands=['register'])
 async def bot_register(message):
     text = message.text
-    dict_text = ((text.strip()).split("#")[1]).strip()
+    dict_text = ((text.strip()).split("&")[1]).strip()
 
     if dict_text in ["PG2","pg2"] :
         print("Under pg2")
@@ -220,6 +230,7 @@ async def bot_register(message):
     except json.JSONDecodeError:
         print("Invalid JSON format!")
     initial(message.from_user.id,result_dict)
+    await bot.reply_to(message,f'You are registerd, now you can procees further !')
 
 @bot.message_handler(commands=['markattendance'])
 async def bot_markattendance(message):
@@ -229,35 +240,41 @@ async def bot_markattendance(message):
         subname = today_subject(subdict[i])
         if subname != 0 :
             session_list.append(subname)
-    substr = ",".join(session_list)
-    reply = f'Mark the attendance for the following subjects\n{substr}'
+    if len(session_list) != 0 :
+        substr = ",".join(session_list)
+        reply = f'Mark the attendance for the following subjects\n{substr}'
+    else :
+        reply = ("No periods today, hence no attendance to mark !")
     userdict[message.from_user.id].session_list  = session_list
     await bot.reply_to(message,reply)
 
 @bot.message_handler(commands= ['mark'])
 async def bot_mark(message):
-    mark_text = message.text.split('#')[1].strip()
-    mark_list = mark_text.split(',')
-    for i in mark_list:
-        i.strip()
     session_list = userdict[message.from_user.id].session_list
-    #session_list = ["math", "hndi"]
-    #mark_list = ["P","A"]
-    att_dict = {}
-    for i in range(0,len(mark_list)):
-        att_dict[session_list[i]] = mark_list[i]
-    #att_dict = {"math" : "P" , "hindi" : "A"}
-    for i in att_dict:
-        sub = userdict[message.from_user.id].subdict[i]
-        print(att_dict)
-        if att_dict[i] == "P" :
-            sub.class_a += 1 
-            sub.class_h += 1
-        else :
-            sub.class_l += 1
-            sub.class_h += 1
-        await bot.reply_to(message,f'Attendanced marked for today successfully !')
-        print(f'Subject is {sub.name} class_a = {sub.class_a} class_l = {sub.class_l} class_h = {sub.class_h}')
+    if len(session_list) != 0 :
+        mark_text = message.text.split('&')[1].strip()
+        mark_list = mark_text.split(',')
+        for i in mark_list:
+            i.strip()
+        #session_list = ["math", "hndi"]
+        #mark_list = ["P","A"]
+        att_dict = {}
+        for i in range(0,len(mark_list)):
+            att_dict[session_list[i]] = mark_list[i]
+        #att_dict = {"math" : "P" , "hindi" : "A"}
+        for i in att_dict:
+            sub = userdict[message.from_user.id].subdict[i]
+            print(att_dict)
+            if att_dict[i] == "P" :
+                sub.class_a += 1 
+                sub.class_h += 1
+            else :
+                sub.class_l += 1
+                sub.class_h += 1
+            reply = 'Attendanced marked for today successfully !'
+    else :
+        reply = "No periods today, hence no attendance to mark !"
+    await bot.reply_to(message,reply)
     
 @bot.message_handler(commands = ['showattendance'])
 async def bot_showattendance(message):
@@ -265,7 +282,7 @@ async def bot_showattendance(message):
     subdict = user.subdict
     for i in subdict:
         sub = subdict[i]
-        reply = f'Subject : {sub.name}\nTotal classes happened : {sub.class_h}\nTotal classes attended : {sub.class_a}\nTotal leaves taken : {sub.class_l}\n Leaves till MT1,MT2,ET are : {sub.mt1leaves} {sub.mt2leaves} {sub.mt2leaves}'
+        reply = f'Subject : {sub.name}\nTotal classes taken : {sub.class_h}\nTotal classes attended : {sub.class_a}\nTotal leaves taken : {sub.class_l}\n Leaves till MT1,MT2,ET are : {sub.mt1leaves} {sub.mt2leaves} {sub.mt3leaves}'
         await bot.reply_to(message,reply)
 
 asyncio.run(bot.polling())
