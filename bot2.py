@@ -4,8 +4,6 @@ from hmac import new
 from math import floor
 import math
 from multiprocessing import Value
-from turtle import update
-from weakref import getweakrefcount
 from annotated_types import UpperCase
 import arrow
 from dotenv import load_dotenv
@@ -28,6 +26,8 @@ class Universal:
         self.exclusions = f_exclusions_l(exclusions_l)
         (self.exclusions).extend(f_exclusions_r(exclusions_r))
         self.remaining_leaves = 0
+
+
 
 class Subject:
     def __init__(self,name,universal,wlist):
@@ -54,47 +54,6 @@ class Subject:
         self.mt2leaves = floor(0.25*self.mt2classes)
         self.mt3leaves = floor(0.25*self.mt3classes)
 
-    def to_dict(self):
-        return {
-            "name" : self.name,
-            "weeklist" : [pdate(i) for i in self.weeklist],
-            "totaldays" : [pdate(i) for i in self.totaldays],
-            "new_totaldays" : [pdate(i) for i in self.new_totaldays],
-            "total_classes" : self.total_classes,
-            "total_leaves" : self.total_leaves,
-            "class_a" : self.class_a,
-            "class_h" : self.class_h,
-            "class_l" : self.class_l,
-            "mt1classes" : self.mt1classes,
-            "mt1leaves" : self.mt1leaves,
-            "mt2classes" : self.mt2classes,
-            "mt2leaves" : self.mt2leaves,
-            "mt3classes" : self.mt3classes,
-            "mt3leaves" : self.mt3leaves
-        }
-    
-    @classmethod
-    def from_dict(cls, data):
-        # Create a Subject object with essential data
-        obj = cls(data["name"], universal, [date(i) for i in data["weeklist"]])
-
-        # Update the object's attributes from the dictionary
-        obj.totaldays = [date(i) for i in data["totaldays"]]
-        obj.new_totaldays = [date(i) for i in data["new_totaldays"]]
-        obj.total_classes = data["total_classes"]
-        obj.total_leaves = data["total_leaves"]
-        obj.class_a = data["class_a"]
-        obj.class_h = data["class_h"]
-        obj.class_l = data["class_l"]
-        obj.mt1classes = data["mt1classes"]
-        obj.mt1leaves = data["mt1leaves"]
-        obj.mt2classes = data["mt2classes"]
-        obj.mt2leaves = data["mt2leaves"]
-        obj.mt3classes = data["mt3classes"]
-        obj.mt3leaves = data["mt3leaves"]
-        return obj
-
-
 class User():
     def __init__ (self,userid,dict_wlist):
         self.session_list = []
@@ -103,31 +62,8 @@ class User():
         self.subdict = {}
         self.section = 0
         for i in dict_wlist:
-            self.subdict[f'{i}'] = Subject(i,universal,dict_wlist[i])
-    
-    def to_dict(self):
-        return {
-        "session_list" : self.session_list,
-        "userid" : self.userid,
-        "dict_wlist" : self.dict_wlist,
-        "subdict" : {key: value.to_dict() for key, value in self.subdict.items()},
-        "section" : self.section
-        }
-    
-    @classmethod
-    def from_dict(cls, data):
-        user = cls(
-            userid=data["userid"],
-            dict_wlist=data["dict_wlist"]
-        )
-        # Rebuild the subdict with Subject objects
-        user.subdict = {key: Subject.from_dict(value) for key, value in data["subdict"].items()}
-        user.session_list = data["session_list"]
-        user.section = data["section"]
-        return user
-    
-
-
+            self.subdict[f'{i}'] = Subject(i,universal,dict_wlist[i])    
+            
 def date(strdate):
     ourdate = arrow.get(strdate, "DD-MM-YY")
     return ourdate
@@ -212,9 +148,8 @@ def main(sub):
         print("\n\n")
 
 def initial(userid,dict1):
-    userdict = get_userdict()
-    userdict.setdefault(userid,User(userid,dict1))
-    return userdict
+    userdict.setdefault(userid,User(1,dict1))
+    # return userdict[userid]
 
 def continous(user):
     for i in user.subdict:
@@ -232,21 +167,6 @@ def show(user1,str):
     sub = user1.subdict[str]
     print(vars(sub))
 
-def get_userdict():
-    dict = collection.find_one({"_id" : 15122005})
-    userdicto = {}
-    for i in dict:
-        if i != "_id":
-            userdicto[i] = User.from_dict(dict[i])
-    return userdicto
-
-def update_userdict(userdicto):
-    userdictd = {}
-    for i in userdicto:
-        userdictd[i] = userdicto[i].to_dict()
-    collection.update_one({"_id": 15122005}, {"$set": userdictd})
-
-
 exclusions_l = ["26-02-25","31-03-25","10-04-25","18-04-25",]
 exclusions_r = ["08-03-25","16-03-25",]
 userdict = {}
@@ -258,17 +178,16 @@ bot = AsyncTeleBot(token)
 
 URI = os.getenv('MONGODB_URI')
 client = MongoClient(URI)
-db = client.testbot
-collection = db.testcollection
-if (collection.find_one({"_id" : 15122005}) == None):
-    userdict = {"_id" : 15122005}
+db = client.lpowerbot
+collection = db.lpowerdata
+if (collection.find_one({'_id' : 15122005}) == None):
+    userdict = {'_id' : 15122005}
     collection.insert_one(userdict)
 else :
-    userdict = get_userdict()
+    userdict = collection.find_one()
 
 @bot.message_handler(commands=['start'])
 async def bot_start(message):
-    userdict = get_userdict()
     from_user = message.from_user
     reply = f'Hello {from_user.first_name} {from_user.last_name}\n Welcome to the attendance tracker bot !'
     await bot.reply_to(message,reply)
@@ -314,13 +233,12 @@ async def bot_register(message):
         result_dict = json.loads(dict_text)
     except json.JSONDecodeError:
         print("Invalid JSON format!")
-    userdict = initial(str(message.from_user.id),result_dict)
-    update_userdict(userdict)
+    initial(str(message.from_user.id),result_dict)
+    collection.replace_one({'_id' : 15122005},userdict)
     await bot.reply_to(message,f'You are registerd, now you can procees further !')
 
 @bot.message_handler(commands=['markattendance'])
 async def bot_markattendance(message):
-    userdict = get_userdict()
     subdict = userdict[str(message.from_user.id)].subdict
     session_list = []
     for i in subdict:
@@ -333,12 +251,11 @@ async def bot_markattendance(message):
     else :
         reply = ("No periods today, hence no attendance to mark !")
     userdict[str(message.from_user.id)].session_list  = session_list
-    update_userdict(userdict)
+    collection.replace_one({'_id' : 15122005},userdict)
     await bot.reply_to(message,reply)
 
 @bot.message_handler(commands= ['mark'])
 async def bot_mark(message):
-    userdict = get_userdict()
     session_list = userdict[str(message.from_user.id)].session_list
     if len(session_list) != 0 :
         mark_text = message.text.split('&')[1].strip()
@@ -363,12 +280,11 @@ async def bot_mark(message):
             reply = 'Attendanced marked for today successfully !'
     else :
         reply = "No periods today, hence no attendance to mark !"
-    update_userdict(userdict)
+    collection.replace_one({'_id' : 15122005},userdict)
     await bot.reply_to(message,reply)
     
 @bot.message_handler(commands = ['showattendance'])
 async def bot_showattendance(message):
-    userdict = get_userdict()
     user = userdict[str(message.from_user.id)]
     subdict = user.subdict
     for i in subdict:
