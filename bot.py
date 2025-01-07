@@ -1,4 +1,3 @@
-import datetime
 import arrow
 from dotenv import load_dotenv
 import asyncio
@@ -7,7 +6,7 @@ import os
 import json
 from pymongo import MongoClient
 import arrow
-
+import math
 
 
 class Universal:
@@ -29,7 +28,7 @@ class Subject:
         self.totaldays = numdate_multi(universal.semstartdate, universal.mt3date, self.weeklist)
         self.new_totaldays = final(self.totaldays,universal.exclusions)
         self.total_classes = len(self.new_totaldays)
-        self.total_leaves = floor(0.25*len(self.new_totaldays))
+        self.total_leaves = math.floor(0.25*len(self.new_totaldays))
         self.class_a = 0
         self.class_l = 0
         self.class_h = 0
@@ -43,9 +42,9 @@ class Subject:
                 self.mt2classes += 1
             if (i < universal.mt3date) :
                 self.mt3classes += 1
-        self.mt1leaves = floor(0.25*self.mt1classes)
-        self.mt2leaves = floor(0.25*self.mt2classes)
-        self.mt3leaves = floor(0.25*self.mt3classes)
+        self.mt1leaves = math.floor(0.25*self.mt1classes)
+        self.mt2leaves = math.floor(0.25*self.mt2classes)
+        self.mt3leaves = math.floor(0.25*self.mt3classes)
 
     def to_dict(self):
         return {
