@@ -14,6 +14,7 @@ from telebot.async_telebot import AsyncTeleBot
 import os
 import json
 from pymongo import MongoClient
+import arrow
 
 
 
@@ -30,7 +31,7 @@ class Universal:
         self.remaining_leaves = 0
 
 class Subject:
-    def __init__(self,name,universal,wlist):
+    def __init__(self,name,wlist):
         self.name = name
         self.weeklist = f_weeklist(wlist)
         self.totaldays = numdate_multi(universal.semstartdate, universal.mt3date, self.weeklist)
@@ -76,7 +77,8 @@ class Subject:
     @classmethod
     def from_dict(cls, data):
         # Create a Subject object with essential data
-        obj = cls(data["name"], universal, [date(i) for i in data["weeklist"]])
+        weeklist = [date(str(i)) for i in data.get("weeklist", [])]
+        obj = cls(data["name"],weeklist)
 
         # Update the object's attributes from the dictionary
         obj.totaldays = [date(i) for i in data["totaldays"]]
@@ -96,14 +98,15 @@ class Subject:
 
 
 class User():
-    def __init__ (self,userid,dict_wlist):
+    def __init__ (self,userid,username,dict_wlist):
         self.session_list = []
         self.userid = userid
         self.dict_wlist = dict_wlist
         self.subdict = {}
         self.section = 0
+        self.username = username
         for i in dict_wlist:
-            self.subdict[f'{i}'] = Subject(i,universal,dict_wlist[i])
+            self.subdict[f'{i}'] = Subject(i,dict_wlist[i])
     
     def to_dict(self):
         return {
@@ -111,36 +114,39 @@ class User():
         "userid" : self.userid,
         "dict_wlist" : self.dict_wlist,
         "subdict" : {key: value.to_dict() for key, value in self.subdict.items()},
-        "section" : self.section
+        "section" : self.section,
+        "username" : self.username
         }
     
     @classmethod
     def from_dict(cls, data):
         user = cls(
             userid=data["userid"],
-            dict_wlist=data["dict_wlist"]
+            dict_wlist=data["dict_wlist"],
+            username=data["username"]
         )
         # Rebuild the subdict with Subject objects
         user.subdict = {key: Subject.from_dict(value) for key, value in data["subdict"].items()}
         user.session_list = data["session_list"]
         user.section = data["section"]
         return user
-    
-
 
 def date(strdate):
-    ourdate = arrow.get(strdate, "DD-MM-YY")
-    return ourdate
+    try:
+        # Try parsing as DD-MM-YY
+        return arrow.get(strdate, "DD-MM-YY")
+    except arrow.parser.ParserError:
+        # If it fails, try parsing as an ISO 8601 string
+        return arrow.get(strdate)
+
 
 def pdate(date):
     str = date.format("DD-MM-YY")
     return str
 
-def f_weeklist(list):
-    wlist = []
-    for i in list:
-        wlist.append(date(i))
-    return wlist
+def f_weeklist(wlist):
+    return [date(str(i)) if not isinstance(i, str) else date(i) for i in wlist]
+
 
 def num_date(semstartdate, mt3date, i):
     l = []
@@ -211,9 +217,9 @@ def main(sub):
             today = date(input("Enter the next date :"))
         print("\n\n")
 
-def initial(userid,dict1):
+def initial(userid,username,dict1):
     userdict = get_userdict()
-    userdict.setdefault(userid,User(userid,dict1))
+    userdict.setdefault(userid,User(userid,username,dict1))
     return userdict
 
 def continous(user):
@@ -272,7 +278,7 @@ async def bot_start(message):
     from_user = message.from_user
     reply = f'Hello {from_user.first_name} {from_user.last_name}\n Welcome to the attendance tracker bot !'
     await bot.reply_to(message,reply)
-    id = from_user.id
+    id = str(from_user.id)
     if id not in userdict:
         await bot.reply_to(message,f'You are not registered kindly register using /register, Thanks')
     await bot.reply_to(message,f'You can always see help using /help.')
@@ -304,19 +310,22 @@ async def bot_help(message):
 
 @bot.message_handler(commands=['register'])
 async def bot_register(message):
-    text = message.text
-    dict_text = ((text.strip()).split("&")[1]).strip()
-
-    if dict_text in ["PG2","pg2"] :
-        print("Under pg2")
-        dict_text = '{"MAT" : ["02-01-25","06-01-25","07-01-25","07-01-25"],"PHY" : ["06-01-25","07-01-25","08-01-25"],"SS" : ["06-01-25","08-01-25"],"EEE" : ["03-01-25","06-01-25","08-01-25"],"ED" : ["02-01-25","07-01-25","08-01-25"],"TC" : ["07-01-25","07-01-25"],"PHY-Lab" : ["06-01-25"],"ED-Lab" : ["03-01-25"],"EEE-Lab" : ["02-01-25"],"TC-Lab" : ["06-01-25","03-01-25"],"Sports" : ["07-01-25","08-01-25"]}'
-    try:
-        result_dict = json.loads(dict_text)
-    except json.JSONDecodeError:
-        print("Invalid JSON format!")
-    userdict = initial(str(message.from_user.id),result_dict)
-    update_userdict(userdict)
-    await bot.reply_to(message,f'You are registerd, now you can procees further !')
+    global userdict
+    if str(message.from_user.id) not in userdict:
+        text = message.text
+        dict_text = ((text.strip()).split("&")[1]).strip()
+        if dict_text in ["PG2","pg2"] :
+            print("Under pg2")
+            dict_text = '{"MAT" : ["02-01-25","06-01-25","07-01-25","07-01-25"],"PHY" : ["06-01-25","07-01-25","08-01-25"],"SS" : ["06-01-25","08-01-25"],"EEE" : ["03-01-25","06-01-25","08-01-25"],"ED" : ["02-01-25","07-01-25","08-01-25"],"TC" : ["07-01-25","07-01-25"],"PHY-Lab" : ["06-01-25"],"ED-Lab" : ["03-01-25"],"EEE-Lab" : ["02-01-25"],"TC-Lab" : ["06-01-25","03-01-25"],"Sports" : ["07-01-25","08-01-25"]}'
+        try:
+            result_dict = json.loads(dict_text)
+        except json.JSONDecodeError:
+            print("Invalid JSON format!")
+        userdict = initial(str(message.from_user.id),str(message.from_user.first_name + message.from_user.last_name),result_dict)
+        update_userdict(userdict)
+        await bot.reply_to(message,f'You are registerd, now you can procees further !')
+    else :
+        await bot.reply_to(message,f'You are already registered !')
 
 @bot.message_handler(commands=['markattendance'])
 async def bot_markattendance(message):
@@ -354,7 +363,7 @@ async def bot_mark(message):
         for i in att_dict:
             sub = userdict[str(message.from_user.id)].subdict[i]
             print(att_dict)
-            if att_dict[i] == "P" :
+            if (att_dict[i] == "P" or att_dict[i] == "p") :                                          
                 sub.class_a += 1 
                 sub.class_h += 1
             else :
