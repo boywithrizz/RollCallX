@@ -480,7 +480,7 @@ async def markattendance():
 async def schedule_task():
     while True:
         now = datetime.now(IST)
-        if now.hour == 1 and now.minute == 7:  # Example: run at 9 AM IST
+        if now.hour == 22 and now.minute == 0:  # Example: run at 9 AM IST
             await markattendance()
         await asyncio.sleep(60)  # Check every minute
 
