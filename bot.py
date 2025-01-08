@@ -287,7 +287,7 @@ def update_userdict(userdicto):
     collection.update_one({"_id": 15122005}, {"$set": userdictd})
 
 load_dotenv()
-token = os.getenv("TELEGRAM_BOT_TOKEN_TEST")
+token = os.getenv("TELEGRAM_BOT_TOKEN")
 bot = AsyncTeleBot(token)
 
 URI = os.getenv("MONGODB_URI")
