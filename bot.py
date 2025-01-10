@@ -311,7 +311,7 @@ universal = Universal(
     "29-03-25",
     "02-05-25",
     exclusions_l,
-    exclusions_r,
+    exclusions_r
 )
 if collection.find_one({"_id": 15122005}) == None:
     userdict = {"_id": 15122005}
@@ -333,7 +333,7 @@ async def bot_start(message):
 @bot.message_handler(commands=["help"])
 async def bot_help(message):
     reply = """1.Type /start to start the bot.
-    If yopur section is not mentionedthen use /register &
+    If your section is not mentioned then use /register &
       Example : 
     /register & 
     {
