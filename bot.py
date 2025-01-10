@@ -590,7 +590,7 @@ async def markattendance():
                         session_list.append(subname)
                 if len(session_list) != 0:
                     substr = ",".join(session_list)
-                    reply = f"Mark the attendance for the following subjects\n{substr}"
+                    reply = f"Mark the attendance for the following subjects\n{substr}\n Type /markattendance"
                 userdict[userid].session_list = session_list
                 await bot.send_message(int(userid), reply)
             update_userdict(userdict)
