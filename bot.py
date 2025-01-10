@@ -2,6 +2,7 @@ import pprint
 import arrow
 from dotenv import load_dotenv
 import asyncio
+from requests import session
 from telebot.async_telebot import AsyncTeleBot,types
 import os
 import json
@@ -461,10 +462,13 @@ async def bot_markattendance(message):
             if subname != 0:
                 session_list.append(subname)
         if len(session_list) != 0:
-            substr = ",".join(session_list)
+            session_list.append(len(session_list))
+            session_list.append(0)
+            actual_list = session_list[0:len(session_list) - 2]
+            substr = ",".join(actual_list)
             # reply = f"Mark the attendance for the following subjects\n{substr}"
             markup = types.InlineKeyboardMarkup()
-            for i in session_list:
+            for i in actual_list:
                 # Create subject button (disabled by making it unclickable)
                 subject_name = types.InlineKeyboardButton(i, callback_data=f"subject_{i}")
                 
@@ -493,17 +497,31 @@ async def handle_attendance(call):
     subject = data[1]
     status = data[2]
     user = userdict[str(call.from_user.id)]
+    session_list = user.session_list
     if status == "P":
-        #await bot.answer_callback_query(call.id, f"Marked {subject} as Present ✅")
         sub = user.subdict[subject]
         sub.class_a += 1
         sub.class_h += 1
+        session_list[len(session_list) - 1] += 1
+        await bot.answer_callback_query(call.id, f"Marked {subject} as Present ✅")
+
 
     elif status == "A":
-        #await bot.answer_callback_query(call.id, f"Marked {subject} as Absent ❌")
         sub = user.subdict[subject]
         sub.class_l += 1
         sub.class_h += 1
+        session_list[len(session_list) - 1] += 1
+        await bot.answer_callback_query(call.id, f"Marked {subject} as Absent ❌")
+
+    if (session_list[len(session_list) - 1] == session_list[len(session_list) - 2]):
+        reply = "Attendance marked for today successfully !"
+        today_date = pdate(arrow.now())
+        daylist = user.daylist
+        daylist[today_date] = True
+        session_list = []
+        user.session_list = session_list
+        await bot.send_message(call.message.chat.id, f"Attendance marked for {today_date} successfully !")
+        
     update_userdict(userdict)
 
 
