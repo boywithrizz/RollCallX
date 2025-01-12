@@ -482,8 +482,8 @@ async def bot_markattendance(message):
             await bot.send_message(message.chat.id, "Choose your option:", reply_markup=markup)
         else:
             reply = "No periods today, hence no attendance to mark !"
+            await bot.reply_to(message, reply)
         userdict[str(message.from_user.id)].session_list = session_list
-        # await bot.reply_to(message, reply)
     else:
         session_list = []
         userdict[str(message.from_user.id)].session_list = session_list
