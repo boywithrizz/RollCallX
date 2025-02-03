@@ -295,7 +295,7 @@ bot = AsyncTeleBot(token)
 
 URI = os.getenv("MONGODB_URI")
 client = MongoClient(URI)
-db = client.RollCallX
+db = client.bot_test
 collection = db.Userdict
 exclusions_l = ["26-02-25", "31-03-25", "10-04-25", "18-04-25"]
 exclusions_r = ["08-03-25", "16-03-25"]
