@@ -3,7 +3,7 @@ import arrow
 from dotenv import load_dotenv
 import asyncio
 from requests import session
-from telebot.async_telebot import AsyncTeleBot,types
+from telebot.async_telebot import AsyncTeleBot, types
 import os
 import json
 from pymongo import MongoClient
@@ -108,7 +108,7 @@ class Subject:
 
 
 class User:
-    def __init__(self, userid, username, dict_wlist,daylist):
+    def __init__(self, userid, username, dict_wlist, daylist):
         self.session_list = []
         self.userid = userid
         self.dict_wlist = dict_wlist
@@ -127,7 +127,7 @@ class User:
             "subdict": {key: value.to_dict() for key, value in self.subdict.items()},
             "section": self.section,
             "username": self.username,
-            "daylist": self.daylist
+            "daylist": self.daylist,
         }
 
     @classmethod
@@ -136,7 +136,7 @@ class User:
             userid=data["userid"],
             dict_wlist=data["dict_wlist"],
             username=data["username"],
-            daylist = data["daylist"]
+            daylist=data["daylist"],
         )
         # Rebuild the subdict with Subject objects
         user.subdict = {
@@ -247,7 +247,7 @@ def main(sub):
 def initial(userid, username, dict1):
     global daylist
     userdict = get_userdict()
-    userdict.setdefault(userid, User(userid, username, dict1,daylist))
+    userdict.setdefault(userid, User(userid, username, dict1, daylist))
     return userdict
 
 
@@ -281,13 +281,13 @@ def get_userdict():
     return userdict
 
 
-
 def update_userdict(userdicto):
     userdictd = {}
     for i in userdicto:
         if i != "_id":
             userdictd[i] = userdicto[i].to_dict()
     collection.update_one({"_id": 15122005}, {"$set": userdictd})
+
 
 load_dotenv()
 token = os.getenv("TELEGRAM_BOT_TOKEN_TEST")
@@ -311,13 +311,14 @@ universal = Universal(
     "29-03-25",
     "02-05-25",
     exclusions_l,
-    exclusions_r
+    exclusions_r,
 )
 if collection.find_one({"_id": 15122005}) == None:
     userdict = {"_id": 15122005}
     collection.insert_one(userdict)
 else:
     userdict = get_userdict()
+
 
 @bot.message_handler(commands=["start"])
 async def bot_start(message):
@@ -329,6 +330,7 @@ async def bot_start(message):
     await bot.reply_to(message, f"You can always see help using /help.")
     if id not in userdict:
         await bot_registerb(message)
+
 
 @bot.message_handler(commands=["help"])
 async def bot_help(message):
@@ -368,14 +370,13 @@ async def bot_register(message):
         except json.JSONDecodeError:
             print("Invalid JSON format!")
         userdict = initial(
-            str(message.from_user.id),
-            str(message.from_user.first_name),
-            result_dict
+            str(message.from_user.id), str(message.from_user.first_name), result_dict
         )
         update_userdict(userdict)
         await bot.reply_to(message, f"You are registerd, now you can procees further !")
     else:
-        await bot.reply_to(message, f"You are already registered !")
+        await bot.reply_to(message, "You are already registered !")
+
 
 @bot.message_handler(commands=["registerb"])
 async def bot_registerb(message):
@@ -384,7 +385,9 @@ async def bot_registerb(message):
         markup = types.InlineKeyboardMarkup()
         pg1 = types.InlineKeyboardButton("PG2", callback_data="section_PG1")
         markup.add(pg1)
-        await bot.send_message(message.chat.id, "Choose your section", reply_markup=markup)
+        await bot.send_message(
+            message.chat.id, "Choose your section", reply_markup=markup
+        )
 
         # text = message.text
         # dict_text = ((text.strip()).split("&")[1]).strip()
@@ -422,6 +425,7 @@ async def bot_registerb(message):
 #         await bot.reply_to(call.from_user.id, f"You are registerd, now you can procees further !")
 #         await bot.send_message(call.from_user.id, "PG1 selected")
 
+
 @bot.callback_query_handler(func=lambda call: call.data.startswith("section_"))
 async def handle_query(call):
     global userdict
@@ -432,7 +436,7 @@ async def handle_query(call):
 
     if a == "PG1":
         dict_text = '{"MAT" : ["02-01-25","06-01-25","07-01-25","07-01-25"],"PHY" : ["06-01-25","07-01-25","08-01-25"],"SS" : ["06-01-25","08-01-25"],"EEE" : ["03-01-25","06-01-25","08-01-25"],"ED" : ["02-01-25","07-01-25","08-01-25"],"TC" : ["07-01-25","07-01-25"],"PHY-Lab" : ["06-01-25"],"ED-Lab" : ["03-01-25"],"EEE-Lab" : ["02-01-25"],"TC-Lab" : ["06-01-25","03-01-25"],"Sports" : ["07-01-25","08-01-25"]}'
-        
+
         try:
             result_dict = json.loads(dict_text)
         except json.JSONDecodeError:
@@ -440,13 +444,13 @@ async def handle_query(call):
             return
 
         userdict = initial(
-            str(call.from_user.id),
-            str(call.from_user.first_name),
-            result_dict
+            str(call.from_user.id), str(call.from_user.first_name), result_dict
         )
 
         update_userdict(userdict)
-        await bot.send_message(call.message.chat.id, "You have been registered successfully!")
+        await bot.send_message(
+            call.message.chat.id, "You have been registered successfully!"
+        )
 
 
 @bot.message_handler(commands=["markattendance"])
@@ -464,22 +468,30 @@ async def bot_markattendance(message):
         if len(session_list) != 0:
             session_list.append(len(session_list))
             session_list.append(0)
-            actual_list = session_list[0:len(session_list) - 2]
+            actual_list = session_list[0 : len(session_list) - 2]
             substr = ",".join(actual_list)
             # reply = f"Mark the attendance for the following subjects\n{substr}"
             markup = types.InlineKeyboardMarkup()
             for i in actual_list:
                 # Create subject button (disabled by making it unclickable)
-                subject_name = types.InlineKeyboardButton(i, callback_data=f"subject_{i}")
-                
+                subject_name = types.InlineKeyboardButton(
+                    i, callback_data=f"subject_{i}"
+                )
+
                 # Create Present and Absent buttons with appropriate callback_data
-                present = types.InlineKeyboardButton("Present ✅", callback_data=f"attendance_{i}_P")
-                absent = types.InlineKeyboardButton("Absent ❌", callback_data=f"attendance_{i}_A")
+                present = types.InlineKeyboardButton(
+                    "Present ✅", callback_data=f"attendance_{i}_P"
+                )
+                absent = types.InlineKeyboardButton(
+                    "Absent ❌", callback_data=f"attendance_{i}_A"
+                )
                 # Add buttons to markup
                 markup.add(subject_name, present, absent)
-            
+
             # Send the message with inline keyboard
-            await bot.send_message(message.chat.id, "Choose your option:", reply_markup=markup)
+            await bot.send_message(
+                message.chat.id, "Choose your option:", reply_markup=markup
+            )
         else:
             reply = "No periods today, hence no attendance to mark !"
             await bot.reply_to(message, reply)
@@ -487,8 +499,9 @@ async def bot_markattendance(message):
     else:
         session_list = []
         userdict[str(message.from_user.id)].session_list = session_list
-        await bot.reply_to(message, f'You have already marked attendance for today!')
+        await bot.reply_to(message, f"You have already marked attendance for today!")
     update_userdict(userdict)
+
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("attendance_"))
 async def handle_attendance(call):
@@ -505,7 +518,6 @@ async def handle_attendance(call):
         session_list[len(session_list) - 1] += 1
         await bot.answer_callback_query(call.id, f"Marked {subject} as Present ✅")
 
-
     elif status == "A":
         sub = user.subdict[subject]
         sub.class_l += 1
@@ -513,15 +525,17 @@ async def handle_attendance(call):
         session_list[len(session_list) - 1] += 1
         await bot.answer_callback_query(call.id, f"Marked {subject} as Absent ❌")
 
-    if (session_list[len(session_list) - 1] == session_list[len(session_list) - 2]):
+    if session_list[len(session_list) - 1] == session_list[len(session_list) - 2]:
         reply = "Attendance marked for today successfully !"
         today_date = pdate(arrow.now())
         daylist = user.daylist
         daylist[today_date] = True
         session_list = []
         user.session_list = session_list
-        await bot.send_message(call.message.chat.id, f"Attendance marked for {today_date} successfully !")
-        
+        await bot.send_message(
+            call.message.chat.id, f"Attendance marked for {today_date} successfully !"
+        )
+
     update_userdict(userdict)
 
 
@@ -571,14 +585,17 @@ async def bot_showattendance(message):
         reply = f"Subject : {sub.name}\nTotal classes taken : {sub.class_h}\nTotal classes attended : {sub.class_a}\nTotal leaves taken : {sub.class_l}\n Leaves till MT1,MT2,ET are : {sub.mt1leaves} {sub.mt2leaves} {sub.mt3leaves}"
         await bot.reply_to(message, reply)
 
+
 # Define the IST time zone
-IST = pytz.timezone('Asia/Kolkata')
+IST = pytz.timezone("Asia/Kolkata")
+
+
 async def markattendance():
     global userdict
     print("Executing markattendance...")
     userdict = get_userdict()
     for userid in userdict:
-        if (userid != "_id"):
+        if userid != "_id":
             daylist = userdict[userid].daylist
             today_date = pdate(arrow.now())
             if daylist[today_date] == False:
@@ -604,11 +621,13 @@ async def schedule_task():
             await markattendance()
         await asyncio.sleep(60)  # Check every minute
 
+
 # Start the bot and schedule task simultaneously
 async def main2():
     bot_task = asyncio.create_task(bot.polling())
     schedule_task_instance = asyncio.create_task(schedule_task())
     await asyncio.gather(bot_task, schedule_task_instance)
+
 
 # Run the main function
 if __name__ == "__main__":
