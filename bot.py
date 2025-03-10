@@ -290,7 +290,7 @@ def update_userdict(userdicto):
 
 
 load_dotenv()
-token = os.getenv("TELEGRAM_BOT_TOKEN_TEST")
+token = os.getenv("TELEGRAM_BOT_TOKEN_TEST")    
 bot = AsyncTeleBot(token)
 
 URI = os.getenv("MONGODB_URI")
