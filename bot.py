@@ -290,12 +290,12 @@ def update_userdict(userdicto):
 
 
 load_dotenv()
-token = os.getenv("TELEGRAM_BOT_TOKEN_TEST")   
+token = os.getenv("TELEGRAM_BOT_TOKEN")   
 bot = AsyncTeleBot(token)
 
 URI = os.getenv("MONGODB_URI")
 client = MongoClient(URI)
-db = client.bot_test
+db = client.RollCallX
 collection = db.Userdict
 exclusions_l = ["26-02-25", "31-03-25", "10-04-25", "18-04-25"]
 exclusions_r = ["08-03-25", "16-03-25"]
