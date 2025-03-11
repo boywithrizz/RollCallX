@@ -383,8 +383,8 @@ async def bot_registerb(message):
     global userdict
     if str(message.from_user.id) not in userdict:
         markup = types.InlineKeyboardMarkup()
-        pg1 = types.InlineKeyboardButton("PG2", callback_data="section_PG1")
-        markup.add(pg1)
+        pg2 = types.InlineKeyboardButton("PG2", callback_data="section_PG2")
+        markup.add(pg2)
         await bot.send_message(
             message.chat.id, "Choose your section", reply_markup=markup
         )
@@ -426,7 +426,7 @@ async def bot_registerb(message):
 #         await bot.send_message(call.from_user.id, "PG1 selected")
 
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("section_"))
+@bot.callback_query_handler(func=lambda call: True)
 async def handle_query(call):
     global userdict
     l = call.data.split("_")
@@ -434,7 +434,7 @@ async def handle_query(call):
     # Send a message to acknowledge the button click
     await bot.answer_callback_query(call.id, "Section selected!")
 
-    if a == "PG1":
+    if a == "PG2":
         dict_text = '{"MAT" : ["02-01-25","06-01-25","07-01-25","07-01-25"],"PHY" : ["06-01-25","07-01-25","08-01-25"],"SS" : ["06-01-25","08-01-25"],"EEE" : ["03-01-25","06-01-25","08-01-25"],"ED" : ["02-01-25","07-01-25","08-01-25"],"TC" : ["07-01-25","07-01-25"],"PHY-Lab" : ["06-01-25"],"ED-Lab" : ["03-01-25"],"EEE-Lab" : ["02-01-25"],"TC-Lab" : ["06-01-25","03-01-25"],"Sports" : ["07-01-25","08-01-25"]}'
 
         try:
